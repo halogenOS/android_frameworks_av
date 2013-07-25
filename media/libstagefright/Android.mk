@@ -89,6 +89,7 @@ LOCAL_SRC_FILES:=                         \
         XINGSeeker.cpp                    \
         avc_utils.cpp                     \
         APE.cpp                           \
+        FFMPEGSoftCodec.cpp               \
 
 LOCAL_C_INCLUDES:= \
         $(TOP)/frameworks/av/include/media/ \
@@ -175,6 +176,9 @@ ifeq ($(DTS_CODEC_M_), true)
   LOCAL_SRC_FILES+= DTSUtils.cpp
   LOCAL_CFLAGS += -DDTS_CODEC_M_
 endif
+
+# FFMPEG plugin
+LOCAL_C_INCLUDES += $(TOP)/external/stagefright-plugins/include
 
 LOCAL_MODULE:= libstagefright
 
