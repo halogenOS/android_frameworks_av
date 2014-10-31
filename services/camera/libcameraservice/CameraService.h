@@ -27,7 +27,7 @@
 #include <binder/BinderService.h>
 #include <binder/IAppOpsCallback.h>
 #include <camera/ICameraServiceProxy.h>
-#include <hardware/camera.h>
+#include "hardware/camera.h"
 
 #include <camera/VendorTagDescriptor.h>
 #include <camera/CaptureResult.h>
