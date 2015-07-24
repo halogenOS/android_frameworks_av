@@ -397,7 +397,7 @@ protected:
         // must be called every time a condition that affects the device choice for a given output is
         // changed: connected device, phone state, force use, output start, output stop..
         // see getDeviceForStrategy() for the use of fromCache parameter
-        audio_devices_t getNewOutputDevice(const sp<AudioOutputDescriptor>& outputDesc,
+        virtual audio_devices_t getNewOutputDevice(const sp<AudioOutputDescriptor>& outputDesc,
                                            bool fromCache);
 
         // updates cache of device used by all strategies (mDeviceForStrategy[])
@@ -612,6 +612,7 @@ protected:
                                             audio_policy_dev_state_t state,
                                             const String8 &device_address);
 
+protected:
         // updates device caching and output for streams that can influence the
         //    routing of notifications
         void handleNotificationRoutingForStream(audio_stream_type_t stream);
