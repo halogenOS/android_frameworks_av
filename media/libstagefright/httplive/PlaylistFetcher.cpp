@@ -34,6 +34,7 @@
 #include <media/stagefright/MediaDefs.h>
 #include <media/stagefright/MetaData.h>
 #include <media/stagefright/Utils.h>
+#include <stagefright/AVExtensions.h>
 
 #include <ctype.h>
 #include <inttypes.h>
@@ -1520,6 +1521,10 @@ void PlaylistFetcher::onDownloadNext() {
         }
     }
 
+    if (checkSwitchBandwidth()) {
+        return;
+    }
+
     ++mSeqNumber;
 
     // if adapting, pause after found the next starting point
@@ -1821,7 +1826,8 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
         const char *mime;
         sp<MetaData> format  = source->getFormat();
         bool isAvc = format != NULL && format->findCString(kKeyMIMEType, &mime)
-                && !strcasecmp(mime, MEDIA_MIMETYPE_VIDEO_AVC);
+                && (!strcasecmp(mime, MEDIA_MIMETYPE_VIDEO_AVC) ||
+                    !strcasecmp(mime, MEDIA_MIMETYPE_VIDEO_HEVC));
 
         if (isAvc) {
             hasAvcSource = true;
@@ -1853,7 +1859,7 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
                     // finding video last preceding IRD, caching video buffers from last
                     // preceding IDR to seek time
                     if (isAvc) {
-                        if (IsIDR(accessUnit)) {
+                        if (IsIDR(accessUnit) || AVUtils::get()->IsHevcIDR(accessUnit)) {
                             mVideoBuffer->clear();
                             FSLOGV(stream, "found IDR, clear mVideoBuffer, save IDR timestamp");
                             mIDRFound = true;
