@@ -258,6 +258,7 @@ protected:
 
     void updateDuration();
     void updateTargetDuration();
+    virtual bool checkSwitchBandwidth() { return false; }
 
     DISALLOW_EVIL_CONSTRUCTORS(PlaylistFetcher);
 };
