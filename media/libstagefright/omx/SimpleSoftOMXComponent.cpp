@@ -455,6 +455,15 @@ void SimpleSoftOMXComponent::onChangeState(OMX_STATETYPE state) {
         onTransitionError();
     }
 
+    // We shouldn't be in a state transition already.
+    if (mState != mTargetState) {
+        // Workaround to prevent assertion
+        // XXX CHECK_EQ((int)mState, (int)mTargetState);
+        ALOGW("mState %d != mTargetState %d", mState, mTargetState);
+        skipTransitions = true;
+        onTransitionError();
+    }
+
     CHECK_EQ((int)mState, (int)mTargetState);
 
     switch (mState) {
