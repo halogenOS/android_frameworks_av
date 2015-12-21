@@ -425,9 +425,9 @@ static VideoFrame *extractVideoFrame(
             if (err != OK) {
                 ALOGW("Input Error or EOS");
                 haveMoreInputs = false;
-                if (err == ERROR_END_OF_STREAM) {
-                    err = OK;
-                }
+                //correct the status to continue get output from decoder
+                err = OK;
+                inputIndex = -1;
                 break;
             }
             if (firstSample && isSeekingClosest) {
