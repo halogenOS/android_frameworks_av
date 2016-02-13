@@ -103,9 +103,8 @@ retry:
     }
 
     sp<MediaExtractor> ret = NULL;
-    if ((ret = AVFactory::get()->createExtendedExtractor(source, mime, meta, flags)) != NULL) {
     AString extractorName;
-    if ((ret = AVFactory::get()->createExtendedExtractor(source, mime, meta)) != NULL) {
+    if ((ret = AVFactory::get()->createExtendedExtractor(source, mime, meta, flags)) != NULL) {
     } else if (meta.get() && meta->findString("extended-extractor-use", &extractorName)
             && sPlugin.create) {
         ALOGI("Use extended extractor for the special mime(%s) or codec", mime);

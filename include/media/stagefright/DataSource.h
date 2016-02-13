@@ -91,7 +91,7 @@ public:
     static sp<DataSource> CreateMediaHTTP(const sp<IMediaHTTPService> &httpService);
     static sp<DataSource> CreateFromIDataSource(const sp<IDataSource> &source);
 
-    DataSource() : mMeta(new AMessage) : mSniffer(new Sniffer()) {}
+    DataSource() : mMeta(new AMessage) , mSniffer(new Sniffer()) {}
 
     virtual status_t initCheck() const = 0;
 
