@@ -163,6 +163,9 @@ cc_library_shared {
             use_legacy_rescaling: {
                 cflags: ["-DUSE_LEGACY_RESCALING"],
             },
+            qti_flac_decoder: {
+                cflags: ["-DQTI_FLAC_DECODER"],
+            },
         },
     },
 
