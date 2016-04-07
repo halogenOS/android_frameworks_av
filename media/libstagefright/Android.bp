@@ -151,6 +151,9 @@ cc_library_shared {
             cant_reallocate_omx_buffers: {
                 cflags: ["-DBOARD_CANT_REALLOCATE_OMX_BUFFERS"],
             },
+            qti_flac_decoder: {
+                cflags: ["-DQTI_FLAC_DECODER"],
+            },
         },
     },
 
