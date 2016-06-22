@@ -274,6 +274,7 @@ status_t SampleTable::setSampleToChunkParams(
         return ERROR_OUT_OF_RANGE;
     }
 
+
     if (mNumSampleToChunkOffsets == 0) {
         return OK;
     }
