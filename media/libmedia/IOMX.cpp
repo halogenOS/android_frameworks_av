@@ -25,6 +25,7 @@
 #include <media/IOMX.h>
 #include <media/stagefright/foundation/ADebug.h>
 #include <media/AVMediaExtensions.h>
+#include <media/openmax/OMX_IndexExt.h>
 
 namespace android {
 
