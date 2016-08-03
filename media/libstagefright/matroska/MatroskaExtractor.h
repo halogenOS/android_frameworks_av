@@ -18,7 +18,7 @@
 
 #define MATROSKA_EXTRACTOR_H_
 
-#include "mkvparser/mkvparser.h"
+#include "mkvparser.hpp"
 
 #include <media/stagefright/MediaExtractor.h>
 #include <utils/Vector.h>
