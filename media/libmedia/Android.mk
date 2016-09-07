@@ -75,6 +75,13 @@ LOCAL_SRC_FILES:= \
     StringArray.cpp \
     AudioPolicy.cpp
 
+ifeq ($(BOARD_USES_WFD_SERVICE),true)
+LOCAL_SRC_FILES += \
+    IWFDService.cpp \
+    WFDService.cpp \
+    WFDServiceListener.cpp
+endif
+
 LOCAL_SHARED_LIBRARIES := \
 	libui liblog libcutils libutils libbinder libsonivox libicuuc libicui18n libexpat \
         libcamera_client libstagefright_foundation \
