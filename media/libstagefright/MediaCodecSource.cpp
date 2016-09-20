@@ -1014,13 +1014,13 @@ void MediaCodecSource::onMessageReceived(const sp<AMessage> &msg) {
         }
 
         releaseEncoder();
+        signalEOS();
 
         if (!(mFlags & FLAG_USE_SURFACE_INPUT)) {
             ALOGV("source (%s) stopping", mIsVideo ? "video" : "audio");
             mPuller->interruptSource();
             ALOGV("source (%s) stopped", mIsVideo ? "video" : "audio");
         }
-        signalEOS();
     }
 
     case kWhatPause:
