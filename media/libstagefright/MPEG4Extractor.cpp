@@ -982,6 +982,11 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
                 mMoofOffset = *offset;
             }
 
+            if (chunk_type == FOURCC('m', 'o', 'o', 'v') && depth != 0) {
+                ALOGE("moov: depth %d", depth);
+                return ERROR_MALFORMED;
+            }
+
             if (chunk_type == FOURCC('s', 't', 'b', 'l')) {
                 ALOGV("sampleTable chunk is %" PRIu64 " bytes long.", chunk_size);
 
@@ -1380,6 +1385,10 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
 
         case FOURCC('s', 't', 's', 'd'):
         {
+            if (mLastTrack == NULL) {
+                return ERROR_MALFORMED;
+            }
+
             uint8_t buffer[8];
             if (chunk_data_size < (off64_t)sizeof(buffer)) {
                 return ERROR_MALFORMED;
