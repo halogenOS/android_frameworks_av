@@ -833,7 +833,11 @@ String8 CameraService::toString(std::set<userid_t> intSet) {
 Status CameraService::initializeShimMetadata(int cameraId) {
     int uid = getCallingUid();
 
+#ifdef NO_CAMERA_SERVER
+    String16 internalPackageName("media");
+#else
     String16 internalPackageName("cameraserver");
+#endif
     String8 id = String8::format("%d", cameraId);
     Status ret = Status::ok();
     sp<Client> tmp = nullptr;
@@ -913,8 +917,10 @@ Status CameraService::getLegacyParametersLazy(int cameraId,
 // Can camera service trust the caller based on the calling UID?
 static bool isTrustedCallingUid(uid_t uid) {
     switch (uid) {
-        case AID_MEDIA:        // mediaserver
+        case AID_MEDIA:         // mediaserver
+#ifndef NO_CAMERA_SERVER
         case AID_CAMERASERVER: // cameraserver
+#endif
         case AID_RADIO:        // telephony
             return true;
         default:
