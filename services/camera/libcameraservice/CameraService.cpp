@@ -336,7 +336,8 @@ void CameraService::onDeviceStatusChanged(camera_device_status_t  cameraId,
 
             // Notify the client of disconnection
             if (clientToDisconnect != nullptr) {
-                clientToDisconnect->notifyError(ICameraDeviceCallbacks::ERROR_CAMERA_DISCONNECTED,
+                clientToDisconnect->notifyError(
+                    hardware::camera2::ICameraDeviceCallbacks::ERROR_CAMERA_DISCONNECTED,
                         CaptureResultExtras{});
             }
         }
