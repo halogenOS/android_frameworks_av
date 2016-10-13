@@ -1162,7 +1162,7 @@ void CameraSource::releaseRecordingFrameHandle(native_handle_t* handle) {
         IPCThreadState::self()->restoreCallingIdentity(token);
     }
     #ifndef TARGET_HAS_CAMERA_HAL_V1
-    else {
+    else if (handle != nullptr) {
         native_handle_close(handle);
         native_handle_delete(handle);
     }
