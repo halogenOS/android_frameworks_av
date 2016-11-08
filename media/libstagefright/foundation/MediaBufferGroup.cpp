@@ -179,6 +179,16 @@ status_t MediaBufferGroup::acquire_buffer(
     // Never gets here.
 }
 
+status_t MediaBufferGroup::acquire_buffer(
+       MediaBuffer **out) {
+   return acquire_buffer(out, false, 0);
+}
+
+status_t MediaBufferGroup::acquire_buffer(
+        MediaBuffer **out, bool nonBlocking) {
+    return acquire_buffer(out, nonBlocking, 0);
+}
+
 void MediaBufferGroup::signalBufferReturned(MediaBuffer *) {
     mCondition.signal();
 }
