@@ -1827,6 +1827,10 @@ status_t PlaylistFetcher::extractAndQueueAccessUnitsFromTs(const sp<ABuffer> &bu
             hasAvcSource = true;
         }
 
+        if (isAvc) {
+            hasAvcSource = true;
+        }
+
         sp<ABuffer> accessUnit;
         status_t finalResult;
         while (source->hasBufferAvailable(&finalResult)
