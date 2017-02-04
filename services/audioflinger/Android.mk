@@ -125,6 +125,13 @@ LOCAL_CFLAGS += -fvisibility=hidden
 
 LOCAL_CFLAGS += -Werror -Wall
 
+ifeq ($(AUDIO_FINE_TUNED_OPTIMIZATIONS),true)
+LOCAL_CFLAGS += -O1 \
+        -foptimize-sibling-calls \
+        -frerun-cse-after-loop \
+        -fstrict-aliasing
+endif
+
 ifeq ($(strip $(BOARD_USES_SRS_TRUEMEDIA)),true)
 LOCAL_SHARED_LIBRARIES += libsrsprocessing
 LOCAL_CFLAGS += -DSRS_PROCESSING
