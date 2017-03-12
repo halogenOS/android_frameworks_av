@@ -1211,7 +1211,7 @@ status_t AudioFlinger::EffectHandle::enable()
                 Mutex::Autolock _l(t->mLock);
                 t->broadcast_l();
             }
-            if (!mEffect->isOffloadable()) {
+            if (!effect->isOffloadable()) {
                 if (thread->type() == ThreadBase::OFFLOAD ||
                    (thread->type() == ThreadBase::DIRECT && thread->mIsDirectPcm)) {
                     PlaybackThread *t = (PlaybackThread *)thread.get();
@@ -1251,7 +1251,7 @@ status_t AudioFlinger::EffectHandle::disable()
 
     sp<ThreadBase> thread = effect->thread().promote();
     if (thread != 0) {
-        thread->checkSuspendOnEffectEnabled(mEffect, false, mEffect->sessionId());
+        thread->checkSuspendOnEffectEnabled(effect, false, effect->sessionId());
         if ((thread->type() == ThreadBase::OFFLOAD) ||
             (thread->type() == ThreadBase::DIRECT && thread->mIsDirectPcm)){
             PlaybackThread *t = (PlaybackThread *)thread.get();
