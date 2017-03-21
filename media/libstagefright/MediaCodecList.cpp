@@ -41,6 +41,7 @@
 
 #include <cutils/properties.h>
 #include <expat.h>
+#include <stagefright/AVExtensions.h>
 
 #include <algorithm>
 
