@@ -746,7 +746,8 @@ status_t MediaCodecsXmlParser::addLimit(const char **attrs) {
             strEq(a_name, "quality") ||
             strEq(a_name, "size") ||
             strEq(a_name, "measured-blocks-per-second") ||
-            strHasPrefix(a_name, "measured-frame-rate-")) {
+            strHasPrefix(a_name, "measured-frame-rate-") ||
+            strHasPrefix(a_name, "vt-")) {
         // "range" is specified in exactly one of the following forms:
         // 1) min-max
         // 2) value-value
