@@ -653,6 +653,7 @@ status_t AudioFlinger::EffectModule::command(uint32_t cmdCode,
                                                      - sizeof(effect_param_t)
                                                      - ((effect_param_t *)pCmdData)->psize
                                                      - ((effect_param_t *)pCmdData)->vsize)) {
+        ALOGV("\tLVM_ERROR : EFFECT_CMD_GET_PARAM: reply size inconsistent");
         android_errorWriteLog(0x534e4554, "30204301");
         return -EINVAL;
     }
