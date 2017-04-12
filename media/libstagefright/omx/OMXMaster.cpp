@@ -66,6 +66,7 @@ OMXMaster::~OMXMaster() {
 void OMXMaster::addVendorPlugin() {
     addPlugin("libstagefrighthw.so");
     addPlugin("libsomxcore.so");
+    addPlugin("libqomx_core.so");
 }
 
 void OMXMaster::addUserPlugin() {
