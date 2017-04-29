@@ -130,6 +130,7 @@ LOCAL_CFLAGS += -O1 \
         -foptimize-sibling-calls \
         -frerun-cse-after-loop \
         -fstrict-aliasing
+endif
 
 ifeq ($(strip $(BOARD_USES_SRS_TRUEMEDIA)),true)
 LOCAL_SHARED_LIBRARIES += libsrsprocessing
