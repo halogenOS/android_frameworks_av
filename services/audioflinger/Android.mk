@@ -45,7 +45,7 @@ LOCAL_SHARED_LIBRARIES := \
     liblog \
     libbinder
 
-LOCAL_CFLAGS := -Wall -Werror
+LOCAL_CFLAGS := -Wall -Werror -Ofast -Wno-unused-function
 
 include $(BUILD_SHARED_LIBRARY)
 
@@ -123,7 +123,7 @@ LOCAL_CFLAGS += -DSTATE_QUEUE_INSTANTIATIONS='"StateQueueInstantiations.cpp"'
 
 LOCAL_CFLAGS += -fvisibility=hidden
 
-LOCAL_CFLAGS += -Werror -Wall
+LOCAL_CFLAGS += -Werror -Wall -Wno-unused-function
 
 ifeq ($(AUDIO_FINE_TUNED_OPTIMIZATIONS),true)
 LOCAL_CFLAGS += -O1 \
