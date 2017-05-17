@@ -13,6 +13,14 @@ namespace android {
 class QCT_Resampler {
 
 public:
+#ifdef QCT_RESAMPLER_MORE_BIT
+	static void		Init(int16_t *pState, int32_t inChannelCount, int32_t inSampleRate, int32_t mSampleRate, int32_t) {
+		Init(pState, inChannelCount, inSampleRate, mSampleRate);
+	}
+	static void		Resample90dB(int16_t* pState, int32_t* in, int32_t* out, size_t inFrameCount, size_t outFrameCount) {
+		Resample90dB(pState, (int16_t*)in, out, inFrameCount, outFrameCount);
+	}
+#endif
 	static size_t	MemAlloc(int bitDepth, int inChannelCount, int32_t inSampleRate, int32_t sampleRate);
 	static void		Init(int16_t *pState, int32_t inChannelCount, int32_t inSampleRate, int32_t mSampleRate);
 	static void		Resample90dB(int16_t* pState, int16_t* in, int32_t* out, size_t inFrameCount, size_t outFrameCount);
