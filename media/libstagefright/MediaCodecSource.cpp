@@ -198,9 +198,6 @@ void MediaCodecSource::Puller::stop() {
         queue->flush(); // flush any unprocessed pulled buffers
     }
 
-    if (interrupt) {
-        interruptSource();
-    }
 }
 
 void MediaCodecSource::Puller::interruptSource() {
@@ -1076,6 +1073,8 @@ void MediaCodecSource::onMessageReceived(const sp<AMessage> &msg) {
         if (generation != mGeneration) {
              break;
         }
+
+        releaseEncoder();
 
         if (!(mFlags & FLAG_USE_SURFACE_INPUT)) {
             ALOGV("source (%s) stopping", mIsVideo ? "video" : "audio");
