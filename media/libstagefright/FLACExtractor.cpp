@@ -82,6 +82,10 @@ class FLACParser : public RefBase {
 friend class FLACSource;
 
 public:
+    enum {
+        kMaxChannels = 8,
+    };
+
     FLACParser(
         const sp<DataSource> &dataSource,
         // If metadata pointers aren't provided, we don't fill them
@@ -134,6 +138,7 @@ private:
     // media buffers
     size_t mMaxBufferSize;
     MediaBufferGroup *mGroup;
+
 
     // handle to underlying libFLAC parser
     FLAC__StreamDecoder *mDecoder;
@@ -425,6 +430,7 @@ void FLACParser::copyBuffer(short *dst, const int *const *src, unsigned nSamples
     }
 }
 
+
 // FLACParser
 
 FLACParser::FLACParser(
@@ -498,7 +504,7 @@ status_t FLACParser::init()
     }
     if (mStreamInfoValid) {
         // check channel count
-        if (getChannels() == 0 || getChannels() > 8) {
+        if (getChannels() == 0 || getChannels() > kMaxChannels) {
             ALOGE("unsupported channel count %u", getChannels());
             return NO_INIT;
         }
@@ -535,6 +541,7 @@ status_t FLACParser::init()
             ALOGE("unsupported sample rate %u", getSampleRate());
             return NO_INIT;
         }
+
         // populate track metadata
         if (mTrackMetadata != 0) {
             mTrackMetadata->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_RAW);
