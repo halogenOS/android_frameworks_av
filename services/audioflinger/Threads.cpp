@@ -13,6 +13,42 @@
 ** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ** See the License for the specific language governing permissions and
 ** limitations under the License.
+**
+** This file was modified by Dolby Laboratories, Inc. The portions of the
+** code that are surrounded by "DOLBY..." are copyrighted and
+** licensed separately, as follows:
+**
+**  (C) 2011-2016 Dolby Laboratories, Inc.
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**    http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
+**
+** This file was modified by DTS, Inc. The portions of the
+** code that are surrounded by "DTS..." are copyrighted and
+** licensed separately, as follows:
+**
+**  (C) 2017 DTS, Inc.
+**
+** Licensed under the Apache License, Version 2.0 (the "License");
+** you may not use this file except in compliance with the License.
+** You may obtain a copy of the License at
+**
+**    http://www.apache.org/licenses/LICENSE-2.0
+**
+** Unless required by applicable law or agreed to in writing, software
+** distributed under the License is distributed on an "AS IS" BASIS,
+** WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+** See the License for the specific language governing permissions and
+** limitations under the License.
 */
 
 
@@ -72,6 +108,10 @@
 #endif
 
 #include "AutoPark.h"
+
+#ifdef SRS_PROCESSING
+#include "postpro_patch.h"
+#endif
 
 // ----------------------------------------------------------------------------
 
@@ -644,6 +684,7 @@ AudioFlinger::ThreadBase::ThreadBase(const sp<AudioFlinger>& audioFlinger, audio
         mNotifiedBatteryStart(false)
 {
     memset(&mPatch, 0, sizeof(struct audio_patch));
+    mIsDirectPcm = false;
 }
 
 AudioFlinger::ThreadBase::~ThreadBase()
@@ -1360,6 +1401,11 @@ status_t AudioFlinger::PlaybackThread::checkEffectCompatibility_l(
     case DIRECT:
         // Reject any effect on Direct output threads for now, since the format of
         // mSinkBuffer is not guaranteed to be compatible with effect processing (PCM 16 stereo).
+        // Exception: allow effects for Direct PCM
+        if (mIsDirectPcm) {
+            // Allow effects when direct PCM enabled on Direct output
+            break;
+        }
         ALOGW("checkEffectCompatibility_l(): effect %s on DIRECT output thread %s",
                 desc->name, mThreadName);
         return BAD_VALUE;
@@ -1419,6 +1465,55 @@ sp<AudioFlinger::EffectHandle> AudioFlinger::ThreadBase::createEffect_l(
         goto Exit;
     }
 
+    // Reject any effect on Direct output threads for now, since the format of
+    // mSinkBuffer is not guaranteed to be compatible with effect processing (PCM 16 stereo).
+    // Exception: allow effects for Direct PCM
+    if (mType == DIRECT && !mIsDirectPcm) {
+        ALOGW("createEffect_l() Cannot add effect %s on Direct output type thread %s",
+                desc->name, mThreadName);
+        lStatus = BAD_VALUE;
+        goto Exit;
+    }
+
+    // Reject any effect on mixer or duplicating multichannel sinks.
+    // TODO: fix both format and multichannel issues with effects.
+    if ((mType == MIXER || mType == DUPLICATING) && mChannelCount != FCC_2) {
+        ALOGW("createEffect_l() Cannot add effect %s for multichannel(%d) %s threads",
+                desc->name, mChannelCount, mType == MIXER ? "MIXER" : "DUPLICATING");
+        lStatus = BAD_VALUE;
+        goto Exit;
+    }
+
+    // Allow global effects only on offloaded and mixer threads
+    // Exception: allow effects for Direct PCM
+    if (sessionId == AUDIO_SESSION_OUTPUT_MIX) {
+        switch (mType) {
+        case MIXER:
+        case OFFLOAD:
+            break;
+        case DIRECT:
+            if (mIsDirectPcm) {
+                // Allow effects when direct PCM enabled on Direct output
+                break;
+            }
+        case DUPLICATING:
+        case RECORD:
+        default:
+            ALOGW("createEffect_l() Cannot add global effect %s on thread %s",
+                    desc->name, mThreadName);
+            lStatus = BAD_VALUE;
+            goto Exit;
+        }
+    }
+
+    // Only Pre processor effects are allowed on input threads and only on input threads
+    if ((mType == RECORD) != ((desc->flags & EFFECT_FLAG_TYPE_MASK) == EFFECT_FLAG_TYPE_PRE_PROC)) {
+        ALOGW("createEffect_l() effect %s (flags %08x) created on wrong thread type %d",
+                desc->name, desc->flags, mType);
+        lStatus = BAD_VALUE;
+        goto Exit;
+    }
+
     ALOGV("createEffect_l() thread %p effect %s on session %d", this, desc->name, sessionId);
 
     { // scope for mLock
@@ -1463,6 +1558,9 @@ sp<AudioFlinger::EffectHandle> AudioFlinger::ThreadBase::createEffect_l(
             effect->setDevice(mInDevice);
             effect->setMode(mAudioFlinger->getMode());
             effect->setAudioSource(mAudioSource);
+#ifdef DOLBY_ENABLE
+            EffectDapController::instance()->effectCreated(effect, this);
+#endif // DOLBY_END
         }
         // create effect handle and connect it to effect module
         handle = new EffectHandle(effect, client, effectClient, priority);
@@ -1564,7 +1662,13 @@ status_t AudioFlinger::ThreadBase::addEffect_l(const sp<EffectModule>& effect)
         return BAD_VALUE;
     }
 
-    effect->setOffloaded(mType == OFFLOAD, mId);
+    bool setval = false;
+
+    if ((mType == OFFLOAD) || (mType == DIRECT && mIsDirectPcm)) {
+        setval = true;
+    }
+
+    effect->setOffloaded(setval, mId);
 
     status_t status = chain->addEffect_l(effect);
     if (status != NO_ERROR) {
@@ -1578,6 +1682,9 @@ status_t AudioFlinger::ThreadBase::addEffect_l(const sp<EffectModule>& effect)
     effect->setDevice(mInDevice);
     effect->setMode(mAudioFlinger->getMode());
     effect->setAudioSource(mAudioSource);
+#ifdef DOLBY_ENABLE
+    EffectDapController::instance()->updateOffload(this);
+#endif // DOLBY_END
     return NO_ERROR;
 }
 
@@ -2786,6 +2893,10 @@ void AudioFlinger::PlaybackThread::threadLoop_exit()
             track->invalidate();
         }
     }
+#ifdef DOLBY_ENABLE // DOLBY_DAP_PREGAIN
+    // When a thread is closed set associated volume to 0
+    EffectDapController::instance()->updatePregain(mType, mId, mOutput->flags, 0);
+#endif // DOLBY_END
 }
 
 /*
@@ -3023,6 +3134,20 @@ bool AudioFlinger::PlaybackThread::threadLoop()
 
     acquireWakeLock();
 
+#ifdef SRS_PROCESSING
+    String8 bt_param = String8("bluetooth_enabled=0");
+    POSTPRO_PATCH_PARAMS_SET(bt_param);
+    if (mType == MIXER) {
+        POSTPRO_PATCH_OUTPROC_PLAY_INIT(this, myName);
+    } else if (mType == OFFLOAD) {
+        POSTPRO_PATCH_OUTPROC_DIRECT_INIT(this, myName);
+        POSTPRO_PATCH_OUTPROC_PLAY_ROUTE_BY_VALUE(this, mOutDevice);
+    } else if (mType == DIRECT) {
+        POSTPRO_PATCH_OUTPROC_DIRECT_INIT(this, myName);
+        POSTPRO_PATCH_OUTPROC_PLAY_ROUTE_BY_VALUE(this, mOutDevice);
+    }
+#endif
+
     // mNBLogWriter->log can only be called while thread mutex mLock is held.
     // So if you need to log when mutex is unlocked, set logString to a non-NULL string,
     // and then that string will be logged at the next convenient opportunity.
@@ -3192,6 +3317,13 @@ bool AudioFlinger::PlaybackThread::threadLoop()
             }
             // mMixerStatusIgnoringFastTracks is also updated internally
             mMixerStatus = prepareTracks_l(&tracksToRemove);
+#ifdef DOLBY_ENABLE // DOLBY_DAP_PREGAIN
+            // If there are no active tracks, then reset volume to zero for this thread.
+            if (mMixerStatus == MIXER_IDLE) {
+                ALOGV("EffectDapController: Reset volumes to zeros for threadType = %d flags = %d", mType, mOutput->flags);
+                EffectDapController::instance()->updatePregain(mType, mId, mOutput->flags, 0);
+            }
+#endif // DOLBY_END
 
             // compare with previously applied list
             if (lastGeneration != mActiveTracksGeneration) {
@@ -3257,7 +3389,8 @@ bool AudioFlinger::PlaybackThread::threadLoop()
             }
 
             // only process effects if we're going to write
-            if (mSleepTimeUs == 0 && mType != OFFLOAD) {
+            if (mSleepTimeUs == 0 && mType != OFFLOAD &&
+                !(mType == DIRECT && mIsDirectPcm)) {
                 for (size_t i = 0; i < effectChains.size(); i ++) {
                     effectChains[i]->process_l();
                 }
@@ -3267,11 +3400,19 @@ bool AudioFlinger::PlaybackThread::threadLoop()
         // was read from audio track: process only updates effect state
         // and thus does have to be synchronized with audio writes but may have
         // to be called while waiting for async write callback
-        if (mType == OFFLOAD) {
+        if ((mType == OFFLOAD) || (mType == DIRECT && mIsDirectPcm)) {
             for (size_t i = 0; i < effectChains.size(); i ++) {
                 effectChains[i]->process_l();
             }
         }
+
+#ifdef SRS_PROCESSING
+            // Offload thread
+            if (mType == OFFLOAD) {
+                char buffer[2];
+                POSTPRO_PATCH_OUTPROC_DIRECT_SAMPLES(this, AUDIO_FORMAT_PCM_16_BIT, (int16_t *) buffer, 2, 48000, 2);
+            }
+#endif
 
         // Only if the Effects buffer is enabled and there is data in the
         // Effects buffer (buffer valid), we need to
@@ -3296,6 +3437,11 @@ bool AudioFlinger::PlaybackThread::threadLoop()
             // mSleepTimeUs == 0 means we must write to audio hardware
             if (mSleepTimeUs == 0) {
                 ssize_t ret = 0;
+#ifdef SRS_PROCESSING
+                if (mType == MIXER && mMixerStatus == MIXER_TRACKS_READY) {
+                    POSTPRO_PATCH_OUTPROC_PLAY_SAMPLES(this, mFormat, mSinkBuffer, mSinkBufferSize, mSampleRate, mChannelCount);
+                }
+#endif
                 // We save lastWriteFinished here, as previousLastWriteFinished,
                 // for throttling. On thread start, previousLastWriteFinished will be
                 // set to -1, which properly results in no throttling after the first write.
@@ -3415,6 +3561,16 @@ bool AudioFlinger::PlaybackThread::threadLoop()
         mStandby = true;
     }
 
+#ifdef SRS_PROCESSING
+    if (mType == MIXER) {
+        POSTPRO_PATCH_OUTPROC_PLAY_EXIT(this, myName);
+    } else if (mType == OFFLOAD) {
+        POSTPRO_PATCH_OUTPROC_DIRECT_EXIT(this, myName);
+    } else if (mType == DIRECT) {
+        POSTPRO_PATCH_OUTPROC_DIRECT_EXIT(this, myName);
+    }
+#endif
+
     releaseWakeLock();
     mWakeLockUids.clear();
     mActiveTracksGeneration++;
@@ -3495,6 +3651,10 @@ status_t AudioFlinger::PlaybackThread::createAudioPatch_l(const struct audio_pat
     for (unsigned int i = 0; i < patch->num_sinks; i++) {
         type |= patch->sinks[i].ext.device.type;
     }
+
+#ifdef SRS_PROCESSING
+    POSTPRO_PATCH_OUTPROC_PLAY_ROUTE_BY_VALUE(this, type);
+#endif
 
 #ifdef ADD_BATTERY_DATA
     // when changing the audio output device, call addBatteryData to notify
@@ -4029,6 +4189,12 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
 
     float masterVolume = mMasterVolume;
     bool masterMute = mMasterMute;
+#ifdef DOLBY_ENABLE // DOLBY_DAP_PREGAIN
+    // The maximum volume of left channel and right channel for pregain calculation.
+    uint32_t max_vol = 0;
+    float dvlf = 0.0f;
+    float dvrf = 0.0f;
+#endif // DOLBY_END
 
     if (masterMute) {
         masterVolume = 0;
@@ -4355,6 +4521,10 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
                 vaf = v * sendLevel * (1. / MAX_GAIN_INT);
             }
 
+#ifdef DOLBY_ENABLE // DOLBY_DAP_PREGAIN
+            dvlf = vlf;
+            dvrf = vrf;
+#endif // DOLBY_END
             // Delegate volume control to effect in track effect chain if needed
             if (chain != 0 && chain->setVolume_l(&vl, &vr)) {
                 // Do not ramp volume if volume is controlled by effect
@@ -4371,6 +4541,17 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
                 }
                 track->mHasVolumeController = false;
             }
+#ifdef DOLBY_ENABLE // DOLBY_DAP_PREGAIN
+            // Select the maximum volume by scanning all the active audio tracks but not the output one.
+            if (!track->isOutputTrack() && !EffectDapController::instance()->bypassTrack(track)) {
+                if (track->mHasVolumeController) {
+                    const float scaleto8_24 = MAX_GAIN_INT * MAX_GAIN_INT;
+                    max_vol = max(max_vol, max(((uint32_t) (scaleto8_24 * vlf * dvlf)), ((uint32_t) (scaleto8_24 * vrf * dvrf))));
+                } else {
+                    max_vol = max(max_vol, max(vl, vr));
+                }
+            }
+#endif // DOLBY_END
 
             // XXX: these things DON'T need to be done each time
             mAudioMixer->setBufferProvider(name, track);
@@ -4491,6 +4672,11 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
                     if (track->isStopped()) {
                         track->reset();
                     }
+#ifdef DOLBY_ENABLE // DOLBY_UDC_VIRTUALIZE_AUDIO
+                    // Since this track is being removed from active tracks, check if we
+                    // should re-enable content processing in DAP.
+                    EffectDapController::instance()->trackStateChanged(track->mId, track->mState);
+#endif // DOLBY_END
                     tracksToRemove->add(track);
                 }
             } else {
@@ -4600,6 +4786,16 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::MixerThread::prepareTrac
     if (fastTracks > 0) {
         mixerStatus = MIXER_TRACKS_READY;
     }
+#ifdef DOLBY_ENABLE
+    // DOLBY_DAP_BYPASS_SOUND_TYPES
+    EffectDapController::instance()->checkForBypass(mActiveTracks, mOutput->flags, mId);
+    // DOLBY_DAP_PREGAIN
+    // Skip the DS pregain setting if there're no active tracks, or all the active tracks are pausing ones,
+    // so that the last pregain will be adopted and zero volume level will not be sent in the 2 cases above.
+    if (mMixerStatusIgnoringFastTracks == MIXER_TRACKS_READY) {
+        EffectDapController::instance()->updatePregain(mType, mId, mOutput->flags, max_vol);
+    }
+#endif // DOLBY_END
     return mixerStatus;
 }
 
@@ -4645,6 +4841,9 @@ bool AudioFlinger::MixerThread::checkForNewParameter_l(const String8& keyValuePa
 
     AudioParameter param = AudioParameter(keyValuePair);
     int value;
+#ifdef SRS_PROCESSING
+        POSTPRO_PATCH_OUTPROC_PLAY_ROUTE(this, param, value);
+#endif
     if (param.getInt(String8(AudioParameter::keySamplingRate), value) == NO_ERROR) {
         reconfig = true;
     }
@@ -4862,6 +5061,12 @@ void AudioFlinger::DirectOutputThread::processVolume_l(Track *track, bool lastTr
             if (mOutput->stream->set_volume) {
                 mOutput->stream->set_volume(mOutput->stream, left, right);
             }
+#ifdef DOLBY_ENABLE // DOLBY_DAP_PREGAIN
+            if (!EffectDapController::instance()->bypassTrack(track)) {
+                // Update the volume set for the current thread
+                EffectDapController::instance()->updatePregain(mType, mId, mOutput->flags, max(vl, vr));
+            }
+#endif // DOLBY_END
         }
     }
 }
@@ -4881,6 +5086,11 @@ void AudioFlinger::DirectOutputThread::onAddNewTrack_l()
                 mFlushPending = true;
             }
         }
+    } else if (previousTrack == 0) {
+        // there could be an old track added back during track transition for direct
+        // output, so always issues flush to flush data of the previous track if it
+        // was already destroyed with HAL paused, then flush can resume the playback
+        mFlushPending = true;
     }
     PlaybackThread::onAddNewTrack_l();
 }
@@ -5041,15 +5251,19 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::DirectOutputThread::prep
                     // indicate to client process that the track was disabled because of underrun;
                     // it will then automatically call start() when data is available
                     track->disable();
-                } else if (last) {
+                    // only do hw pause when track is going to be removed due to BUFFER TIMEOUT.
+                    // unlike mixerthread, HAL can be paused for direct output, and as HAL can be
+                    // paused at the first underrun, but track may be ready for the next loop and
+                    // the playback is resumed, it will make the playback interrupted
                     ALOGW("pause because of UNDERRUN, framesReady = %zu,"
                             "minFrames = %u, mFormat = %#x",
                             track->framesReady(), minFrames, mFormat);
-                    mixerStatus = MIXER_TRACKS_ENABLED;
-                    if (mHwSupportsPause && !mHwPaused && !mStandby) {
+                    if (mHwSupportsPause && last && !mHwPaused && !mStandby) {
                         doHwPause = true;
                         mHwPaused = true;
                     }
+                } else if (last) {
+                    mixerStatus = MIXER_TRACKS_ENABLED;
                 }
             }
         }
@@ -5280,6 +5494,8 @@ void AudioFlinger::DirectOutputThread::cacheParameters_l()
         mStandbyDelayNs = 0;
     } else if ((mType == OFFLOAD) && !audio_has_proportional_frames(mFormat)) {
         mStandbyDelayNs = kOffloadStandbyDelayNs;
+    } else if (mType == DIRECT && mIsDirectPcm) {
+        mStandbyDelayNs = kOffloadStandbyDelayNs;
     } else {
         mStandbyDelayNs = microseconds(mActiveSleepTimeUs*2);
     }
@@ -5470,15 +5686,9 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::OffloadThread::prepareTr
         if (track->isInvalid()) {
             ALOGW("An invalidated track shouldn't be in active list");
             tracksToRemove->add(track);
-            continue;
-        }
-
-        if (track->mState == TrackBase::IDLE) {
+        } else if (track->mState == TrackBase::IDLE) {
             ALOGW("An idle track shouldn't be in active list");
-            continue;
-        }
-
-        if (track->isPausing()) {
+        } else if (track->isPausing()) {
             track->setPaused();
             if (last) {
                 if (mHwSupportsPause && !mHwPaused) {
@@ -5506,7 +5716,7 @@ AudioFlinger::PlaybackThread::mixer_state AudioFlinger::OffloadThread::prepareTr
             if (last) {
                 mFlushPending = true;
             }
-        } else if (track->isResumePending()){
+        } else if (track->isResumePending()) {
             track->resumeAck();
             if (last) {
                 if (mPausedBytesRemaining) {

@@ -50,6 +50,8 @@
 #include <private/android_filesystem_config.h>
 
 
+#include <stagefright/AVExtensions.h>
+
 namespace android {
 
 MediaExtractor::MediaExtractor():
@@ -141,15 +143,16 @@ sp<DecryptHandle> RemoteDataSource::DrmInitialization(const char *mime) {
 
 // static
 sp<IMediaExtractor> MediaExtractor::Create(
-        const sp<DataSource> &source, const char *mime) {
-    ALOGV("MediaExtractor::Create %s", mime);
+        const sp<DataSource> &source, const char *mime,
+        const uint32_t flags) {
+    ALOGV("MediaExtractor::Create %s flags %d", mime, flags);
 
     char value[PROPERTY_VALUE_MAX];
     if (property_get("media.stagefright.extractremote", value, NULL)
             && (!strcmp("0", value) || !strcasecmp("false", value))) {
         // local extractor
         ALOGW("creating media extractor in calling process");
-        return CreateFromService(source, mime);
+        return CreateFromService(source, mime, flags);
     } else {
         // Check if it's WVM, since WVMExtractor needs to be created in the media server process,
         // not the extractor process.
@@ -178,7 +181,7 @@ sp<IMediaExtractor> MediaExtractor::Create(
 
         if (binder != 0) {
             sp<IMediaExtractorService> mediaExService(interface_cast<IMediaExtractorService>(binder));
-            sp<IMediaExtractor> ex = mediaExService->makeExtractor(RemoteDataSource::wrap(source), mime);
+            sp<IMediaExtractor> ex = mediaExService->makeExtractor(RemoteDataSource::wrap(source), mime, flags);
             return ex;
         } else {
             ALOGE("extractor service not running");
@@ -189,9 +192,10 @@ sp<IMediaExtractor> MediaExtractor::Create(
 }
 
 sp<MediaExtractor> MediaExtractor::CreateFromService(
-        const sp<DataSource> &source, const char *mime) {
+        const sp<DataSource> &source, const char *mime,
+        const uint32_t flags) {
 
-    ALOGV("MediaExtractor::CreateFromService %s", mime);
+    ALOGV("MediaExtractor::CreateFromService %s flags %d", mime, flags);
     DataSource::RegisterDefaultSniffers();
 
     sp<AMessage> meta;
@@ -233,7 +237,8 @@ sp<MediaExtractor> MediaExtractor::CreateFromService(
     }
 
     MediaExtractor *ret = NULL;
-    if (!strcasecmp(mime, MEDIA_MIMETYPE_CONTAINER_MPEG4)
+    if ((ret = AVFactory::get()->createExtendedExtractor(source, mime, meta, flags)) != NULL) {
+    } else if (!strcasecmp(mime, MEDIA_MIMETYPE_CONTAINER_MPEG4)
             || !strcasecmp(mime, "audio/mp4")) {
         ret = new MPEG4Extractor(source);
     } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MPEG)) {
@@ -261,15 +266,13 @@ sp<MediaExtractor> MediaExtractor::CreateFromService(
     } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_MIDI)) {
         ret = new MidiExtractor(source);
     }
-
     if (ret != NULL) {
        if (isDrm) {
-           ret->setDrmFlag(true);
+          ret->setDrmFlag(true);
        } else {
-           ret->setDrmFlag(false);
+          ret->setDrmFlag(false);
        }
     }
-
     return ret;
 }
 
