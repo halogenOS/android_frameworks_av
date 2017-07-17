@@ -126,7 +126,7 @@ LOCAL_CFLAGS += -fvisibility=hidden
 LOCAL_CFLAGS += -Werror -Wall -Wno-unused-function
 
 ifeq ($(AUDIO_FINE_TUNED_OPTIMIZATIONS),true)
-LOCAL_CFLAGS += -O1 \
+LOCAL_CFLAGS += -O2 \
         -foptimize-sibling-calls \
         -frerun-cse-after-loop \
         -fstrict-aliasing
