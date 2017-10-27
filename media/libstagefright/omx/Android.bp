@@ -91,7 +91,7 @@ cc_library_shared {
     },
 
      product_variables: {
-        carbon: {
+        xos: {
             qcom_bsp_legacy: {
                 cflags: ["-DQCOM_BSP_LEGACY"],
             },
