@@ -2272,8 +2272,8 @@ status_t AudioTrack::restoreTrack_l(const char *from)
         // Tear down sink only for non-internal invalidation.
         // Since new track could again have invalidation on setPlayback rate causing
         // continuous creation and tear down.
-        if (!mTrackOffloaded ||
-              isAudioPlaybackRateEqual(mPlaybackRate, AUDIO_PLAYBACK_RATE_DEFAULT)) {
+        if (!isOffloaded() ||
+                isAudioPlaybackRateEqual(mPlaybackRate, AUDIO_PLAYBACK_RATE_DEFAULT)) {
             return DEAD_OBJECT;
         }
     }
