@@ -1665,7 +1665,7 @@ AudioFlinger::PlaybackThread::PlaybackThread(const sp<AudioFlinger>& audioFlinge
         mScreenState(AudioFlinger::mScreenState),
         // index 0 is reserved for normal mixer's submix
         mFastTrackAvailMask(((1 << FastMixerState::sMaxFastTracks) - 1) & ~1),
-        mHwSupportsPause(false), mHwPaused(false), mFlushPending(false), mHwSupportsSuspend(false)
+        mHwSupportsPause(false), mHwPaused(false), mFlushPending(false), mHwSupportsSuspend(false),
         mLeftVolFloat(-1.0), mRightVolFloat(-1.0)
 {
     snprintf(mThreadName, kThreadNameLength, "AudioOut_%X", id);
