@@ -59,14 +59,19 @@ struct AudioSource;
 /*
  * Factory to create objects of base-classes in libstagefright
  */
-struct AVFactory {
-    virtual sp<ACodec> createACodec();
-    virtual MediaExtractor* createExtendedExtractor(
+class AVFactory {
+
+public:
+    AVFactory();
+    ~AVFactory();
+
+    sp<ACodec> createACodec();
+    MediaExtractor* createExtendedExtractor(
             const sp<DataSource> &source, const char *mime, const sp<AMessage> &meta,
             const uint32_t flags);
-    virtual ElementaryStreamQueue* createESQueue(
+    ElementaryStreamQueue* createESQueue(
             ElementaryStreamQueue::Mode mode, uint32_t flags = 0);
-    virtual CameraSource *CreateCameraSourceFromCamera(
+    CameraSource *CreateCameraSourceFromCamera(
             const sp<hardware::ICamera> &camera,
             const sp<ICameraRecordingProxy> &proxy,
             int32_t cameraId,
@@ -78,7 +83,7 @@ struct AVFactory {
             const sp<IGraphicBufferProducer>& surface,
             bool storeMetaDataInVideoBuffers = true);
 
-    virtual CameraSourceTimeLapse *CreateCameraSourceTimeLapseFromCamera(
+    CameraSourceTimeLapse *CreateCameraSourceTimeLapseFromCamera(
             const sp<hardware::ICamera> &camera,
             const sp<ICameraRecordingProxy> &proxy,
             int32_t cameraId,
@@ -90,7 +95,7 @@ struct AVFactory {
             const sp<IGraphicBufferProducer>& surface,
             int64_t timeBetweenFrameCaptureUs,
             bool storeMetaDataInVideoBuffers = true);
-    virtual AudioSource* createAudioSource(
+    AudioSource* createAudioSource(
             audio_source_t inputSource,
             const String16 &opPackageName,
             uint32_t sampleRate,
@@ -98,80 +103,89 @@ struct AVFactory {
             uint32_t outSampleRate = 0,
             uid_t clientUid = -1,
             pid_t clientPid = -1);
-    virtual MPEG4Writer *CreateMPEG4Writer(int fd);
+    MPEG4Writer *CreateMPEG4Writer(int fd);
 
-    // ----- NO TRESSPASSING BEYOND THIS LINE ------
-    DECLARE_LOADABLE_SINGLETON(AVFactory);
+    static AVFactory* get();
+
+private:
+    static AVFactory* sInst;
+
 };
 
 /*
  * Common delegate to the classes in libstagefright
  */
-struct AVUtils {
+class AVUtils {
 
-    virtual status_t convertMetaDataToMessage(
+public:
+    AVUtils();
+    ~AVUtils();
+
+    status_t convertMetaDataToMessage(
             const sp<MetaData> &meta, sp<AMessage> *format);
-    virtual MediaExtractor::SnifferFunc getExtendedSniffer();
-    virtual status_t convertMessageToMetaData(
+    status_t convertMessageToMetaData(
             const sp<AMessage> &msg, sp<MetaData> &meta);
-    virtual status_t mapMimeToAudioFormat( audio_format_t& format, const char* mime);
-    virtual status_t sendMetaDataToHal(const sp<MetaData>& meta, AudioParameter *param);
-    virtual sp<MediaCodec> createCustomComponentByName(const sp<ALooper> &looper,
+    status_t mapMimeToAudioFormat( audio_format_t& format, const char* mime);
+    status_t sendMetaDataToHal(const sp<MetaData>& meta, AudioParameter *param);
+    sp<MediaCodec> createCustomComponentByName(const sp<ALooper> &looper,
                 const char* mime, bool encoder, const sp<AMessage> &format);
-    virtual bool isEnhancedExtension(const char *extension);
+    bool isEnhancedExtension(const char *extension);
 
-    virtual bool hasAudioSampleBits(const sp<MetaData> &);
-    virtual bool hasAudioSampleBits(const sp<AMessage> &);
-    virtual int getAudioSampleBits(const sp<MetaData> &);
-    virtual int getAudioSampleBits(const sp<AMessage> &);
-    virtual audio_format_t updateAudioFormat(audio_format_t audioFormat,
+    bool hasAudioSampleBits(const sp<MetaData> &);
+    bool hasAudioSampleBits(const sp<AMessage> &);
+    int getAudioSampleBits(const sp<MetaData> &);
+    int getAudioSampleBits(const sp<AMessage> &);
+    audio_format_t updateAudioFormat(audio_format_t audioFormat,
             const sp<MetaData> &);
 
-    virtual audio_format_t updateAudioFormat(audio_format_t audioFormat,
+    audio_format_t updateAudioFormat(audio_format_t audioFormat,
             const sp<AMessage> &);
-    virtual bool canOffloadAPE(const sp<MetaData> &meta);
-    virtual bool useQCHWEncoder(const sp<AMessage> &,Vector<AString> *) { return false; }
+    bool canOffloadAPE(const sp<MetaData> &meta);
+    bool useQCHWEncoder(const sp<AMessage> &,Vector<AString> *) { return false; }
 
-    virtual int32_t getAudioMaxInputBufferSize(audio_format_t audioFormat,
+    int32_t getAudioMaxInputBufferSize(audio_format_t audioFormat,
             const sp<AMessage> &);
 
-    virtual bool mapAACProfileToAudioFormat(const sp<MetaData> &,
+    bool mapAACProfileToAudioFormat(const sp<MetaData> &,
             audio_format_t &,
             uint64_t /*eAacProfile*/);
 
-    virtual bool mapAACProfileToAudioFormat(const sp<AMessage> &,
+    bool mapAACProfileToAudioFormat(const sp<AMessage> &,
             audio_format_t &,
             uint64_t /*eAacProfile*/);
 
-    virtual void extractCustomCameraKeys(
+    void extractCustomCameraKeys(
             const CameraParameters& /*params*/, sp<MetaData> &/*meta*/) {}
-    virtual void printFileName(int /*fd*/) {}
-    virtual void addDecodingTimesFromBatch(MediaBuffer * /*buf*/,
+    void printFileName(int /*fd*/) {}
+    void addDecodingTimesFromBatch(MediaBuffer * /*buf*/,
             List<int64_t> &/*decodeTimeQueue*/) {}
 
-    virtual bool canDeferRelease(const sp<MetaData> &/*meta*/) { return false; }
-    virtual void setDeferRelease(sp<MetaData> &/*meta*/) {}
+    bool canDeferRelease(const sp<MetaData> &/*meta*/) { return false; }
+    void setDeferRelease(sp<MetaData> &/*meta*/) {}
 
-    virtual bool isAudioMuxFormatSupported(const char *mime);
-    virtual void cacheCaptureBuffers(sp<hardware::ICamera> camera, video_encoder encoder);
-    virtual void getHFRParams(bool*, int32_t*, sp<AMessage>);
-    virtual int64_t overwriteTimeOffset(bool, int64_t, int64_t *, int64_t, int32_t);
-    virtual const char *getCustomCodecsLocation();
-    virtual const char *getCustomCodecsPerformanceLocation();
+    bool isAudioMuxFormatSupported(const char *mime);
+    void cacheCaptureBuffers(sp<hardware::ICamera> camera, video_encoder encoder);
+    void getHFRParams(bool*, int32_t*, sp<AMessage>);
+    int64_t overwriteTimeOffset(bool, int64_t, int64_t *, int64_t, int32_t);
+    const char *getCustomCodecsLocation();
+    const char *getCustomCodecsPerformanceLocation();
 
-    virtual void setIntraPeriod(
+    void setIntraPeriod(
                 int nPFrames, int nBFrames, sp<IOMXNode> mOMXNode);
 
-    virtual const char *getComponentRole(bool isEncoder, const char *mime);
+    const char *getComponentRole(bool isEncoder, const char *mime);
 
 
     // Used by ATSParser
-    virtual bool IsHevcIDR(const sp<ABuffer> &accessUnit);
+    bool IsHevcIDR(const sp<ABuffer> &accessUnit);
 
-    virtual sp<AMessage> fillExtradata(sp<MediaCodecBuffer>&, sp<AMessage> &format);
+    sp<AMessage> fillExtradata(sp<MediaCodecBuffer>&, sp<AMessage> &format);
 
-    // ----- NO TRESSPASSING BEYOND THIS LINE ------
-    DECLARE_LOADABLE_SINGLETON(AVUtils);
+    static AVUtils* get();
+
+private:
+    static AVUtils* sInst;
+
 };
 
 }

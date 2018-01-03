@@ -48,6 +48,7 @@ cc_library_static {
     include_dirs: [
         "frameworks/av/include/media",
         "frameworks/av/media/libstagefright",
+        "frameworks/av/media/libstagefright/omx/include/media/stagefright",
         "frameworks/native/include/media/hardware",
         "frameworks/native/include/media/openmax",
         "frameworks/av/media/libstagefright/mpeg2ts",
@@ -73,6 +74,7 @@ cc_library_static {
         "libhidltransport",
         "libhwbinder",
         "libhidlmemory",
+        "android.hidl.allocator@1.0",
         "android.hidl.memory@1.0",
         "android.hardware.graphics.common@1.0",
         "android.hardware.graphics.bufferqueue@1.0",
@@ -80,6 +82,7 @@ cc_library_static {
 
     export_shared_lib_headers: [
         "android.hidl.memory@1.0",
+        "android.hidl.allocator@1.0",
     ],
 
     cflags: [
@@ -87,6 +90,17 @@ cc_library_static {
         "-Wno-unused-parameter",
         "-Werror",
     ],
+
+    sanitize: {
+        cfi: true,
+        misc_undefined: [
+            "unsigned-integer-overflow",
+            "signed-integer-overflow",
+        ],
+        diag: {
+            cfi: true,
+        },
+    },
 }
 
 

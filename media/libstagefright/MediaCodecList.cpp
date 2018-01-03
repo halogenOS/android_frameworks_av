@@ -312,9 +312,13 @@ void MediaCodecList::findMatchingCodecs(
         if ((flags & kHardwareCodecsOnly) && isSoftwareCodec(componentName)) {
             ALOGV("skipping SW codec '%s'", componentName.c_str());
         } else {
+            const char* owner = info->getOwnerName();
+            if (owner == nullptr) {
+                continue;
+            }
             matches->push(componentName);
             if (owners != nullptr) {
-                owners->push(AString(info->getOwnerName()));
+                owners->push(AString(owner));
             }
             ALOGV("matching '%s'", componentName.c_str());
         }

@@ -93,16 +93,6 @@ audio_format_t AVUtils::updateAudioFormat(audio_format_t audioFormat,
     return audioFormat;
 }
 
-static bool dumbSniffer(
-        const sp<DataSource> &, String8 *,
-        float *, sp<AMessage> *) {
-    return false;
-}
-
-MediaExtractor::SnifferFunc AVUtils::getExtendedSniffer() {
-    return dumbSniffer;
-}
-
 sp<MediaCodec> AVUtils::createCustomComponentByName(
            const sp<ALooper> &, const char* , bool, const sp<AMessage> &) {
                return NULL;
@@ -177,9 +167,15 @@ AVUtils::AVUtils() {}
 
 AVUtils::~AVUtils() {}
 
-//static
-AVUtils *AVUtils::sInst =
-        ExtensionsLoader<AVUtils>::createInstance("createExtendedUtils");
+AVUtils* AVUtils::sInst = NULL;
+
+AVUtils* AVUtils::get() {
+    if (sInst == NULL) {
+        sInst = ExtensionsLoader<AVUtils>
+                    ::createInstance("createExtendedUtils");
+    }
+    return sInst;
+}
 
 } //namespace android
 

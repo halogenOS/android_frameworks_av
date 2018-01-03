@@ -291,7 +291,6 @@ void MediaExtractor::RegisterDefaultSniffers() {
     RegisterSniffer_l(SniffAAC);
     RegisterSniffer_l(SniffMPEG2PS);
     RegisterSniffer_l(SniffMidi);
-    RegisterSniffer_l(AVUtils::get()->getExtendedSniffer());
 
     gSniffersRegistered = true;
 }

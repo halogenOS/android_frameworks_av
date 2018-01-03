@@ -112,16 +112,24 @@ AudioSource* AVFactory::createAudioSource(
     return new AudioSource(inputSource, opPackageName, sampleRate,
                             channels, outSampleRate, clientUid, clientPid);
 }
-// ----- NO TRESSPASSING BEYOND THIS LINE ------
+
+
 AVFactory::AVFactory() {
 }
 
 AVFactory::~AVFactory() {
 }
 
-//static
-AVFactory *AVFactory::sInst =
-        ExtensionsLoader<AVFactory>::createInstance("createExtendedFactory");
+AVFactory* AVFactory::sInst = NULL;
+
+// static
+AVFactory* AVFactory::get() {
+    if (sInst == NULL) {
+        sInst = ExtensionsLoader<AVFactory>
+                    ::createInstance("createExtendedFactory");
+    }
+    return sInst;
+}
 
 } //namespace android
 

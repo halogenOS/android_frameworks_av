@@ -6445,12 +6445,14 @@ bool ACodec::UninitializedState::onAllocateComponent(const sp<AMessage> &msg) {
             mCodec->signalError(OMX_ErrorUndefined, UNKNOWN_ERROR);
             return false;
         }
-                //make sure if the component name contains qcom/qti, we add it to matchingCodecs
+
+        //make sure if the component name contains qcom/qti, we add it to matchingCodecs
         //as these components are not present in media_codecs.xml and MediaCodecList won't find
         //these component by findCodecByName
         if (matchingCodecs.size() == 0 && (componentName.find("qcom", 0) > 0 ||
             componentName.find("qti", 0) > 0)) {
             matchingCodecs.add(componentName);
+            owners.add("default");
         } else {
             matchingCodecs.add(info->getCodecName());
             owners.add(info->getOwnerName() == nullptr ?
@@ -8358,10 +8360,9 @@ void ACodec::FlushingState::changeStateIfWeOwnAllBuffers() {
 }
 
 status_t ACodec::queryCapabilities(
-        const char* owner, const char* name, const AString &name, const AString &mime, bool isEncoder,
-        sp<MediaCodecInfo::Capabilities> *caps) {
-    (*caps).clear();
-    const char *role = AVUtils::get()->getComponentRole(isEncoder, mime.c_str());
+        const char* owner, const char* name, const char* mime, bool isEncoder,
+        MediaCodecInfo::CapabilitiesWriter* caps) {
+    const char *role = AVUtils::get()->getComponentRole(isEncoder, mime);
     if (role == NULL) {
         return BAD_VALUE;
     }

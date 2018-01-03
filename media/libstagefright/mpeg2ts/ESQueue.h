@@ -33,7 +33,7 @@ namespace android {
 
 struct ABuffer;
 class MetaData;
-struct AVUtils;
+class AVUtils;
 
 struct ElementaryStreamQueue {
     enum Mode {
