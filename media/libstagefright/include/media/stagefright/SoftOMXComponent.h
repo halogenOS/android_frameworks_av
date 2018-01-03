@@ -1,1 +1,1 @@
-../../SoftOMXComponent.h
+../../../../../media/libstagefright/omx/include/media/stagefright/omx/SoftOMXComponent.h

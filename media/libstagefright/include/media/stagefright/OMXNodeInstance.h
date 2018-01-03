@@ -1,1 +1,1 @@
-../../OMXNodeInstance.h
+../../../../../media/libstagefright/omx/include/media/stagefright/omx/OMXNodeInstance.h
