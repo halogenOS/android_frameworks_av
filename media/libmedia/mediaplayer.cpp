@@ -593,7 +593,7 @@ status_t MediaPlayer::seekTo_l(int msec, MediaPlayerSeekMode mode)
             return NO_ERROR;
         }
     }
-    ALOGE("Attempt to perform seekTo in wrong state: mPlayer=%p, mCurrentState=%u", mPlayer.get(),
+    ALOGV("Attempt to perform seekTo in wrong state: mPlayer=%p, mCurrentState=%u", mPlayer.get(),
             mCurrentState);
     return INVALID_OPERATION;
 }
@@ -904,7 +904,7 @@ void MediaPlayer::notify(int msg, int ext1, int ext2, const Parcel *obj)
         // Always log errors.
         // ext1: Media framework error code.
         // ext2: Implementation dependant error code.
-        ALOGE("error (%d, %d)", ext1, ext2);
+        ALOGV("error (%d, %d)", ext1, ext2);
         mCurrentState = MEDIA_PLAYER_STATE_ERROR;
         if (mPrepareSync)
         {
