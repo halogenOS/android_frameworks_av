@@ -20,13 +20,8 @@
 #include "CameraService.h"
 #include "common/CameraDeviceBase.h"
 #include "common/Camera2ClientBase.h"
-#ifndef USE_QTI_CAMERA2CLIENT
 #include "api1/client2/Parameters.h"
 #include "api1/client2/FrameProcessor.h"
-#else
-#include "api1/qticlient2/Parameters.h"
-#include "api1/qticlient2/FrameProcessor.h"
-#endif
 //#include "api1/client2/StreamingProcessor.h"
 //#include "api1/client2/JpegProcessor.h"
 //#include "api1/client2/ZslProcessor.h"
@@ -34,10 +29,6 @@
 //#include "api1/client2/CallbackProcessor.h"
 
 namespace android {
-
-#ifdef USE_QTI_CAMERA2CLIENT
-class QTICamera2Client;
-#endif
 
 namespace camera2 {
 
@@ -57,10 +48,6 @@ class IMemory;
 class Camera2Client :
         public Camera2ClientBase<CameraService::Client>
 {
-#ifdef USE_QTI_CAMERA2CLIENT
-friend class QTICamera2Client;
-#endif
-
 public:
     /**
      * ICamera interface (see ICamera for details)
@@ -225,9 +212,6 @@ private:
     sp<camera2::CaptureSequencer> mCaptureSequencer;
     sp<camera2::JpegProcessor> mJpegProcessor;
     sp<camera2::ZslProcessor> mZslProcessor;
-#ifdef USE_QTI_CAMERA2CLIENT
-    sp<QTICamera2Client> mQTICamera2Client;
-#endif
 
     /** Utility members */
     bool mLegacyMode;
