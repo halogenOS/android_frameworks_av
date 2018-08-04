@@ -7,7 +7,7 @@ LOCAL_VENDOR_MODULE := true
 LOCAL_SRC_FILES:= \
 	EffectVisualizer.cpp
 
-LOCAL_CFLAGS+= -O2 -fvisibility=hidden
+LOCAL_CFLAGS+= -O3 -fvisibility=hidden
 LOCAL_CFLAGS += -Wall -Werror
 
 LOCAL_SHARED_LIBRARIES := \
