@@ -65,7 +65,7 @@ cc_library_shared {
     ],
 
     product_variables: {
-        lineage: {
+        custom: {
             uses_qcom_bsp_legacy: {
                 cppflags: ["-DQCOM_BSP_LEGACY"],
             },
