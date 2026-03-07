@@ -48,7 +48,27 @@
 #include <C2Buffer.h>
 #include <Codec2BufferUtils.h>
 
+#include <aidl/custom/media/codec/ICodecFeatures.h>
+#include <android/binder_manager.h>
+
+using aidl::custom::media::codec::ICodecFeatures;
+
 namespace android {
+
+static std::shared_ptr<ICodecFeatures> gCodecFeatures;
+static std::mutex gCodecFeaturesMutex;
+
+static std::shared_ptr<ICodecFeatures> getCodecFeaturesService() {
+    std::lock_guard<std::mutex> lock(gCodecFeaturesMutex);
+    if (gCodecFeatures == nullptr) {
+        ndk::SpAIBinder binder(AServiceManager_checkService(
+                (std::string(ICodecFeatures::descriptor) + "/default").c_str()));
+        if (binder.get()) {
+            gCodecFeatures = ICodecFeatures::fromBinder(binder);
+        }
+    }
+    return gCodecFeatures;
+}
 
 static const int64_t kBufferTimeOutUs = 10000LL; // 10 msec
 static const int64_t kAsyncBufferTimeOutUs = 2000000LL; // 2000 msec
@@ -890,7 +910,12 @@ sp<AMessage> VideoFrameDecoder::onGetFormatAndSeekOptions(
             || (mSeekMode == MediaSource::ReadOptions::SEEK_FRAME_INDEX);
     if (!isSeekingClosest) {
         if (mComponentName.startsWithIgnoreCase("c2.")) {
-            mUseBlockModel = android::media::codec::provider_->thumbnail_block_model();
+            bool useBlockModel = true;
+            auto codecFeatures = getCodecFeaturesService();
+            if (codecFeatures) {
+                codecFeatures->supportsThumbnailBlockModel(&useBlockModel);
+            }
+            mUseBlockModel = useBlockModel;
         } else {
             // OMX Codec
             videoFormat->setInt32("android._num-input-buffers", 1);

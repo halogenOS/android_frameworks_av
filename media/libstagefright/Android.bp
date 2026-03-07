@@ -287,6 +287,7 @@ cc_library {
         "android.hardware.drm@1.0",
         "android.hardware.media.omx@1.0",
         "android.hidl.allocator@1.0",
+        "custom.media.codec-V1-ndk",
         "framework-permission-aidl-cpp",
         "libaconfig_storage_read_api_cc",
         "libaudioclient",
