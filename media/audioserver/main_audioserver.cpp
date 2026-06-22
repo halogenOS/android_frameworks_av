@@ -37,6 +37,7 @@
 
 // from include_dirs
 #include "AudioFlinger.h"
+#include "AudioInformationService.h"
 #include "AudioPolicyService.h"
 #include "AAudioService.h"
 #include "utility/AAudioUtilities.h"
@@ -97,6 +98,9 @@ int main(int argc __unused, char **argv __unused)
     sm->addService(String16(IAudioFlinger::DEFAULT_SERVICE_NAME), afAdapter,
             false /* allowIsolated */, IServiceManager::DUMP_FLAG_PRIORITY_DEFAULT);
     sm->addService(String16(AudioPolicyService::getServiceName()), aps,
+            false /* allowIsolated */, IServiceManager::DUMP_FLAG_PRIORITY_DEFAULT);
+    const auto audioInformation = sp<AudioInformationService>::make(af);
+    sm->addService(String16(AudioInformationService::kServiceName), audioInformation,
             false /* allowIsolated */, IServiceManager::DUMP_FLAG_PRIORITY_DEFAULT);
 
     // AAudioService should only be used in OC-MR1 and later.

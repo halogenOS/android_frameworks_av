@@ -152,6 +152,7 @@ cc_defaults {
         "av-types-aidl-cpp",
         "com.android.media.audio-aconfig-cc",
         "com.android.media.audioserver-aconfig-cc",
+        "custom.media.audio_information-cpp",
         "effect-aidl-cpp",
         "libactivitymanager_aidl",
         "libaudioclient",
@@ -199,6 +200,7 @@ cc_library {
 
     srcs: [
         "AudioFlinger.cpp",
+        "AudioInformationService.cpp",
         "Client.cpp",
         "DeviceEffectManager.cpp",
         "Effects.cpp",

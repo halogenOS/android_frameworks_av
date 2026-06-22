@@ -162,6 +162,8 @@ public:
     virtual audio_channel_mask_t channelMask() const = 0;
     virtual audio_channel_mask_t mixerChannelMask() const = 0;
     virtual audio_format_t format() const = 0;
+    // Sink/mix format (may differ from the HAL format reported by format()).
+    virtual audio_format_t mixFormat() const = 0;
     virtual uint32_t channelCount() const = 0;
     virtual std::string flagsAsString() const = 0;
 
@@ -523,6 +525,11 @@ public:
     virtual bool isTrackActive_l(const sp<IAfTrack>& track) const REQUIRES(mutex()) = 0;
     virtual void addOutputTrack_l(const sp<IAfTrack>& track) REQUIRES(mutex()) = 0;
 
+    // The audio_port_handle_t of each sink in the thread's current patch (mPatch.sinks[i].id) — the
+    // same value space as AudioDeviceInfo.getId(), so the unambiguous device-match key. Empty when
+    // the thread has no patch yet (mPatch.num_sinks == 0). Read under the held thread mutex().
+    virtual std::vector<audio_port_handle_t> outDevicePortIds_l() const REQUIRES(mutex()) = 0;
+
     // a very large number of suspend() will eventually wraparound, but unlikely
     virtual void suspend() = 0;
     virtual void restore() = 0;
@@ -555,6 +562,13 @@ public:
             EXCLUDES_ThreadBase_Mutex = 0;
 
     virtual bool hasMixer() const = 0;
+
+    // The audio format of the mixer's internal accumulation buffer (mMixerBufferFormat), i.e. the
+    // precision the mixer actually mixes in (typically AUDIO_FORMAT_PCM_FLOAT) before requantizing
+    // to the sink/HAL format reported by mixFormat()/format(). AUDIO_FORMAT_INVALID when the thread
+    // has no mixer buffer (direct/offload/bit-perfect bypass). Distinct from mixFormat(), which is
+    // the sink format.
+    virtual audio_format_t mixerBufferFormat() const = 0;
 
     virtual status_t setRequestedLatencyMode(audio_latency_mode_t mode) = 0;
 
@@ -718,6 +732,11 @@ public:
     // Sets the UID records silence - TODO(b/291317898)  move to IAfMmapCaptureThread
     virtual void setRecordSilenced(audio_port_handle_t portId, bool silenced)
             EXCLUDES_ThreadBase_Mutex = 0;
+
+    // The audio_port_handle_t of each current device (mDeviceIds) — the same value space as
+    // AudioDeviceInfo.getId(), so the unambiguous device-match key. Read under the held thread
+    // mutex(); mDeviceIds is GUARDED_BY(mutex()).
+    virtual std::vector<audio_port_handle_t> outDevicePortIds_l() const REQUIRES(mutex()) = 0;
 };
 
 

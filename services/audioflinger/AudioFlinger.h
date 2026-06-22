@@ -63,6 +63,8 @@ class AudioFlinger
     , public IAfThreadCallback
 {
     friend class sp<AudioFlinger>;
+    // Read-only diagnostic facade that enumerates active output paths under mutex().
+    friend class AudioInformationService;
 public:
     static void instantiate() ANDROID_API;
 

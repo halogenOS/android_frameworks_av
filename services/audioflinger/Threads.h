@@ -322,6 +322,7 @@ public:
     audio_channel_mask_t channelMask() const final { return mChannelMask; }
     audio_channel_mask_t mixerChannelMask() const override { return mChannelMask; }
     audio_format_t format() const final { return mHALFormat; }
+    audio_format_t mixFormat() const final { return mFormat; }
     uint32_t channelCount() const final { return mChannelCount; }
     audio_channel_mask_t hapticChannelMask() const override { return AUDIO_CHANNEL_NONE; }
     uint32_t hapticChannelCount() const override { return 0; }
@@ -1306,6 +1307,32 @@ public:
 
     bool hasMixer() const final {
                     return mType == MIXER || mType == DUPLICATING || mType == SPATIALIZER;
+                }
+
+    // NO_THREAD_SAFETY_ANALYSIS: mMixerBufferFormat is GUARDED_BY(ThreadBase_ThreadLoop), but it is
+    // written only in readOutputParameters_l() (REQUIRES(mutex()), at construction and on output
+    // reconfiguration) and merely read by the threadLoop — it is never reassigned from the running
+    // loop. It is therefore effectively immutable between reconfigurations and stable for a reader
+    // holding mutex(). The audio-information facade reads it under the held thread mutex(), which is
+    // safe; we cannot annotate REQUIRES(mutex()) here without tripping -Wthread-safety against the
+    // declared ThreadBase_ThreadLoop guard. Same pattern as collectEffects_l/describeBitPerfect_l.
+    audio_format_t mixerBufferFormat() const final NO_THREAD_SAFETY_ANALYSIS {
+                    return mMixerBufferFormat;
+                }
+
+    // NO_THREAD_SAFETY_ANALYSIS: mPatch carries no static guard (see the comment at its declaration:
+    // "mPatch and mAudioSource should be guarded by mutex()"), so it cannot be annotated
+    // REQUIRES(mutex()) without tripping -Wthread-safety. The caller holds mutex() — the same lock
+    // PlaybackThread::createAudioPatch_l holds when it writes mPatch — so the read is safe in
+    // practice; we do not claim a static guarantee. Returns the id of every sink, and an empty
+    // vector when the thread has no patch yet (mPatch.num_sinks == 0), never reading sinks[0].
+    std::vector<audio_port_handle_t> outDevicePortIds_l() const final NO_THREAD_SAFETY_ANALYSIS {
+                    std::vector<audio_port_handle_t> portIds;
+                    portIds.reserve(mPatch.num_sinks);
+                    for (unsigned int i = 0; i < mPatch.num_sinks; ++i) {
+                        portIds.push_back(mPatch.sinks[i].id);
+                    }
+                    return portIds;
                 }
 
     status_t setRequestedLatencyMode(
@@ -2387,6 +2414,13 @@ class MmapThread : public ThreadBase, public virtual IAfMmapThread
     virtual audio_stream_type_t streamType_l() const REQUIRES(mutex()) {
         return AUDIO_STREAM_DEFAULT;
     }
+
+    // mDeviceIds is GUARDED_BY(mutex()) (a DeviceIdVector, i.e. std::vector<audio_port_handle_t>),
+    // so this read is statically lock-safe with mutex() held. Each id is the same value space as
+    // AudioDeviceInfo.getId() — the device-match key.
+    std::vector<audio_port_handle_t> outDevicePortIds_l() const final REQUIRES(mutex()) {
+                                return mDeviceIds;
+                            }
 
                 // Sets the UID records silence
     void setRecordSilenced(
