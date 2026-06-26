@@ -209,6 +209,11 @@ void AudioInformationService::describePlaybackThread_l(
         source.format = static_cast<int32_t>(track->format());
         source.channelMask = static_cast<int32_t>(track->channelMask());
         source.resampling = track->sampleRate() != threadSampleRate;
+        // The track's NEGOTIATED output flags (effective per-track flags after AF negotiation),
+        // a source-side property distinct from the thread flags. NOT the raw app request — that is
+        // a discarded local in createTrack_l() and is unreadable here. Read per-track off the
+        // sp<IAfTrack> already obtained above; never derived from the thread's flags.
+        source.outputFlags = static_cast<int32_t>(track->getOutputFlags());
         out->sources.push_back(std::move(source));
     }
 
